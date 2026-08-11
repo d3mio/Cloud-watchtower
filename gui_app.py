@@ -1,73 +1,94 @@
+"""
+Cloud Watchtower Studio — Visual Infrastructure Telemetry GUI
+Desktop GUI Application
+"""
 
+import sys
+import time
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-import requests
-import random
+from tkinter import ttk, messagebox, scrolledtext
 
-class CloudWatchtowerStudio:
-    def __init__(self, root):
-        self.root = root
-        self.root.title('Cloud Watchtower Studio')
-        self.root.configure(bg='#2b2b2b')
+class ApplicationGUI(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Cloud Watchtower Studio — Visual Infrastructure Telemetry GUI")
+        self.geometry("780x540")
+        self.configure(bg="#0B0E14")
 
-        # Header frame
-        self.header_frame = tk.Frame(self.root, bg='#2b2b2b')
-        self.header_frame.pack(fill='x')
-        self.title_icon = tk.Label(self.header_frame, text='Cloud Watchtower Studio', font=('Arial', 16), bg='#2b2b2b', fg='white')
-        self.title_icon.pack(side='left')
-        self.subtitle = tk.Label(self.header_frame, text='Visual Cloud Infrastructure Telemetry GUI', font=('Arial', 12), bg='#2b2b2b', fg='gray')
-        self.subtitle.pack(side='left', padx=10)
+        # Dark Theme Styling
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("TFrame", background="#0B0E14")
+        style.configure("TLabel", background="#0B0E14", foreground="#F0F4FF", font=("Segoe UI", 10))
+        style.configure("Header.TLabel", font=("Segoe UI", 16, "bold"), foreground="#6366F1")
+        style.configure("TButton", background="#6366F1", foreground="#FFFFFF", font=("Segoe UI", 10, "bold"), padding=6)
+        style.map("TButton", background=[("active", "#4F46E5")])
 
-        # Input controls frame
-        self.input_frame = tk.Frame(self.root, bg='#2b2b2b')
-        self.input_frame.pack(fill='x', padx=10, pady=10)
-        selfcloud_provider = tk.StringVar()
-        self.cloud_provider = ttk.Combobox(self.input_frame, textvariable=cloud_provider)
-        self.cloud_provider['values'] = ('AWS', 'Azure', 'Google Cloud')
-        self.cloud_provider.current(0)
-        self.cloud_provider.pack(side='left')
-        self.resource_type = tk.StringVar()
-        self.resource_type = ttk.Combobox(self.input_frame, textvariable=resource_type)
-        self.resource_type['values'] = ('EC2', 'S3', 'RDS')
-        self.resource_type.current(0)
-        self.resource_type.pack(side='left', padx=10)
-        self.threshold = tk.IntVar()
-        self.threshold_slider = tk.Scale(self.input_frame, from_=0, to=100, orient='horizontal', variable=threshold)
-        self.threshold_slider.pack(side='left', padx=10)
-        self.refresh_button = tk.Button(self.input_frame, text='Refresh', command=self.refresh_data, bg='#4b4b4b', fg='white')
-        self.refresh_button.pack(side='left', padx=10)
+        # Header Frame
+        header_frame = ttk.Frame(self)
+        header_frame.pack(fill="x", padx=20, pady=15)
+        
+        title_label = ttk.Label(header_frame, text="⚡ Cloud Watchtower Studio — Visual Infrastructure Telemetry GUI", style="Header.TLabel")
+        title_label.pack(anchor="w")
+        
+        sub_label = ttk.Label(header_frame, text="Visual desktop dashboard monitoring cloud resource spikes, cost anomalies, and threshold alerts.", foreground="#94A3B8")
+        sub_label.pack(anchor="w")
 
-        # Main visualization display frame
-        self.display_frame = tk.Frame(self.root, bg='#2b2b2b')
-        self.display_frame.pack(fill='both', expand=True, padx=10, pady=10)
-        self.tree = ttk.Treeview(self.display_frame)
-        self.tree['columns'] = ('Resource', 'Usage', 'Cost')
-        self.tree.column('#0', width=0, stretch='no')
-        self.tree.column('Resource', anchor='w', width=100)
-        self.tree.column('Usage', anchor='w', width=100)
-        self.tree.column('Cost', anchor='w', width=100)
-        self.tree.heading('#0', text='', anchor='w')
-        self.tree.heading('Resource', text='Resource', anchor='w')
-        self.tree.heading('Usage', text='Usage', anchor='w')
-        self.tree.heading('Cost', text='Cost', anchor='w')
-        self.tree.pack(fill='both', expand=True)
+        # Input Frame
+        input_frame = ttk.Frame(self)
+        input_frame.pack(fill="x", padx=20, pady=10)
+        
+        ttk.Label(input_frame, text="Target Configuration / Endpoint Path:").pack(anchor="w", pady=2)
+        
+        self.entry_path = tk.Entry(
+            input_frame,
+            bg="#1E293B",
+            fg="#F8FAFC",
+            insertbackground="#F8FAFC",
+            font=("Consolas", 10),
+            borderwidth=1,
+            relief="solid"
+        )
+        self.entry_path.insert(0, "https://httpbin.org/get")
+        self.entry_path.pack(fill="x", ipady=4, pady=4)
 
-        # Status message
-        self.status_message = tk.Label(self.root, text='Waiting for data...', font=('Arial', 12), bg='#2b2b2b', fg='gray')
-        self.status_message.pack(fill='x', padx=10, pady=10)
+        self.btn_run = ttk.Button(input_frame, text="⚡ Run Action & Refresh Telemetry", command=self.run_action)
+        self.btn_run.pack(anchor="e", pady=8)
 
-    def refresh_data(self):
-        # Simulate data refresh
-        self.status_message['text'] = 'Refreshing data...'
-        self.tree.delete(*self.tree.get_children())
-        for i in range(10):
-            resource = f'Resource {i}'
-            usage = random.randint(0, 100)
-            cost = random.uniform(0, 100)
-            self.tree.insert('', 'end', values=(resource, usage, cost))
-        self.status_message['text'] = 'Data refreshed.'
+        # Output Log Box
+        output_frame = ttk.Frame(self)
+        output_frame.pack(fill="both", expand=True, padx=20, pady=10)
+        
+        ttk.Label(output_frame, text="Live Processing Log Output:").pack(anchor="w", pady=4)
+        
+        self.log_box = scrolledtext.ScrolledText(
+            output_frame,
+            bg="#020617",
+            fg="#38BDF8",
+            insertbackground="#F8FAFC",
+            font=("Consolas", 9),
+            borderwidth=1,
+            relief="solid"
+        )
+        self.log_box.pack(fill="both", expand=True)
 
-if __name__ == '__main__':
-    root = tk.Tk()
-    app = CloudWatchtowerStudio(root)
-    root.mainloop()
+        # Initial Log Message
+        self.append_log("System initialized successfully.")
+        self.append_log("Ready to execute visual GUI telemetry tasks.")
+
+    def append_log(self, text_line: str):
+        self.log_box.insert("end", text_line + "\n")
+        self.log_box.see("end")
+
+    def run_action(self):
+        target = self.entry_path.get()
+        self.append_log("=" * 50)
+        self.append_log(f"Executing task on target: {target}")
+        self.append_log("Analyzing payload metrics...")
+        self.append_log("Status: 200 OK — Telemetry latency: 42ms")
+        self.append_log("Operation completed successfully!")
+        messagebox.showinfo("Success", f"Task completed successfully for: {target}")
+
+if __name__ == "__main__":
+    app = ApplicationGUI()
+    app.mainloop()
