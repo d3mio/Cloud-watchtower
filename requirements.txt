@@ -1,6 +1,1 @@
-
-azure-identity
-azure-mgmt-monitor
-azure-mgmt-compute
-azure-core
-pyyaml
+requests>=2.31.0
